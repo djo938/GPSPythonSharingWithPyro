@@ -1,0 +1,28 @@
+-put the code of the gps daemon
+-put the client code
+    -allow to check the gps status
+        -be able to know if an antenna is plugged or not
+        -if the antenna is starting or running or failling 
+    -allow to check pyro status    
+    
+-log in /var/log/gpspyshare/
+-improve the shared object
+-create a gpsutil module
+    distance from line
+    distance from point
+    and other function : http://www.movable-type.co.uk/scripts/latlong.html
+    
+-create a gpsCoordinate object
+    -able to parse any string of coordinate
+    
+-create an object to import on the client side 
+    -not just a list of function as now
+
+-create list of points and lines
+    http://www.mapcoordinates.net/en
+    
+-check every 10 (or ?) seconds, which is the closest point/lines ? (put a limit, ie 100 meter is not close form something)
+    -and update the location shared
+    
+-solve the security issues 
+    - ?? see when the client is started
