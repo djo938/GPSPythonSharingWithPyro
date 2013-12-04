@@ -1,15 +1,41 @@
 #http://www.danmandle.com/blog/getting-gpsd-to-work-with-python/
 #http://blog.perrygeo.net/2007/05/27/python-gpsd-bindings/
 
-from pydaemon import Daemon
+from pydaemon import Daemon          #github/djo938
 import datetime, os, Pyro4, logging
-from gps import *
-from gps.misc import *
+from gps import *                    #package comes from gpsd
+from gps.misc import *               #package comes from gpsd
+from utils import getDistance
+
+MAX_SYSTIME_SECONDS_BEFORE_CHANGE = 10
+MAX_DELAY_BEFORE_REFRESH = 10
+MAX_DISTANCE_TO_REFRESH = 2
+
+def setSystemTime(dtime):
+    newDate = "date -s \""+dtime.strftime("%d %b %Y %H:%M:%S")+"\""
+    logging.info(newDate)
+    if os.system(newDate) != 0:
+        logging.warning("failed to set date : "+newDate)
+        return False
+    return True
 
 class sharedGpsClient(object):
-    pass #TODO
-        #TODO move the code from dumpd about the data sharing to here
-            #abstract the use of pyro4 for dumpd
+    def __init__(self):
+        self.reInit()
+    
+    def isInit(self):
+        return self.shared == None
+        
+    def reInit(self):
+        try:
+            self.shared = Pyro4.Proxy("PYRONAME:dump.gpsdata")
+        except Exception as ex:
+            self.shared = None
+            logging.exception("Pyro4 Exception (getPosition) : "+str(ex))
+    
+    def getSharedObject(self):
+        return self.shared
+
 
 class gpsSharing(Daemon):
     def run(self):
@@ -19,53 +45,65 @@ class gpsSharing(Daemon):
                 proxy=Pyro4.Proxy("PYRONAME:dump.gpsdata")
                 timeSet = False
                 lastfix = None
+                lastpos = (0.0, 0.0, )
                 proxy.setGpsLogId(localid)
                 while True:
                     gpsd.next() #this will continue to loop and grab EACH set of gpsd info to clear the buffer
+                    currentSystemTime = datetime.datetime.now() #get the current system timec 
                     
+                    ### FIX TIME ###
                     #define utc datetime
                     utcdatetime = None
+                    
+                    #try to get the time of the fix
                     if gpsd.utc != None and not isnan(gpsd.utc) and len(gpsd.utc) > 0:
                         utcfloatTime = isotime(gpsd.utc)
                         utcdatetime = datetime.datetime.fromtimestamp(int(utcfloatTime))
-                    else:
-                        pass #TODO
-                            #if timeSet == True, use the local time 
                     
+                    #time has already be set ? yes, get the current time of the system
+                    elif timeSet: 
+                        utcdatetime = datetime.datetime.now()
+                    
+                    lastfix = utcdatetime
+                    
+                    ### POSITION ###
                     if not isnan(gpsd.fix.latitude) and not isnan(gpsd.fix.longitude):
-                        #TODO if previous fix is bigger than 10 seconds (?) and distant of 2 meters (?)
+                        #if no fix time OR previous fix is bigger than 10 seconds (?) OR distant of 2 meters (?)
                             #otherwise, don't compute
                             #if time == None, compute
-                    
-                        pass #TODO
-                        #TODO logging.info("position : "+position)
-                        
-                        #TODO share
-                        
-                        #TODO find the nearest place (line or point)
+                        if utcdatetime == None or (lastfix != None and (utcdatetime - lastfix).total_seconds() > MAX_DELAY_BEFORE_REFRESH or getDistance(gpsd.fix.latitude, gpsd.fix.longitude, lastpos[0], lastpos[1]) > MAX_DISTANCE_TO_REFRESH):
+                            logging.info("position : "+str(gpsd.fix.latitude)+","+str(gpsd.fix.longitude))
                             
-                            #TODO share
+                            #share
+                            proxy.setPosition(gpsd.fix.latitude, gpsd.fix.longitude, utcdatetime)
+                            
+                            #TODO find the nearest place (line or point)
+                                #TODO share
                         
-                        #TODO kml
+                            #TODO kml (from simplekml import Kml)
+                                #see file parse.py
+                            
+                            #TODO sqllite (?)
+                                #could be interesting in case of prblm to make some search
+                            
+                        lastpos = (gpsd.fix.latitude,gpsd.fix.longitude,)
                         
+                    ### ALTITUDE
                     if not isnan(gpsd.fix.altitude):
-                        pass #TODO
-                        #TODO logging.info("altitude : "+altitude)
+                        logging.info("altitude : "+str(gpsd.fix.altitude))
+                        proxy.setAltitude(gpsd.fix.altitude, utcdatetime)
                     
-                        #TODO share
                     
-                    #set time
-                        #TODO only one time ?
-                            #or if the difference is 5 seconds ? (for example)
-                    if not timeSet and utcdatetime != None: 
-                        #TODO
-                            #build this line only with utcdatetime
-                        newDate = "date -s \""+str(utcdatetime.day)+" "+utcdatetime.strftime("%b")+" "+str(utcdatetime.year)+" "+fixtime[0:2]+":"+fixtime[2:4]+":"+fixtime[4:6]+"\""
-                        logging.info(newDate)
-                        if os.system(newDate) != 0:
-                            logging.warning("failed to set date : "+newDate)
+                    ### SYSTEM DATETIME ###
+                    #TODO don't set time if ntpd was allowed to fetch it
+                    if utcdatetime != None:
+                        if not timeSet:
+                            timeSet = setSystemTime(utcdatetime)
                         else:
-                            timeSet = True
+                            currentSystemTime = datetime.datetime.now()
+                            if (currentSystemTime - utcdatetime).total_seconds() > MAX_SYSTIME_SECONDS_BEFORE_CHANGE:
+                                setSystemTime(utcdatetime)
+                        
                     logging.info("datetime : "+str(utcdatetime))
                     
             except Exception as ex:

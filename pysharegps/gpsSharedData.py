@@ -21,8 +21,8 @@ class sharedGpsData(object):
         return self.alt
         
     ###
-    def setPlace(self, placename, distance, dtime):
-        self.place = (placename, distance, dtime,)
+    def setPlace(self, placename, distance, dtime, unit = "M"):
+        self.place = (placename, distance, unit, dtime,)
         
     def getPlace(self):
         return self.place
