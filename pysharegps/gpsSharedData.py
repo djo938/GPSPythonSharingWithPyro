@@ -1,10 +1,11 @@
 
+import sys
 
 class sharedGpsData(object):
     def __init__(self):
         self.pos   = (0.0,0.0,None,)   # float latitude(from equateur),float longitude(from greenwitch),datetime (Universal Time Coordinated)
         self.alt   = (0.0, "M", None,) # float altitude, string scale unit, datetime (Universal Time Coordinated)
-        self.place = ("",0, None, )       # string place name, distance from this point, datetime (Universal Time Coordinated)
+        self.place = ("",sys.maxint,"M", "", None, )       # string place name, distance from this point, datetime (Universal Time Coordinated)
     
     ###
     def setPosition(self, latitude, longitude, dtime):
@@ -21,8 +22,8 @@ class sharedGpsData(object):
         return self.alt
         
     ###
-    def setPlace(self, placename, distance, dtime, unit = "M"):
-        self.place = (placename, distance, unit, dtime,)
+    def setPlace(self, placename, distance, distanceType, dtime, unit = "M"):
+        self.place = (placename, distance, unit, distanceType, dtime,)
         
     def getPlace(self):
         return self.place
