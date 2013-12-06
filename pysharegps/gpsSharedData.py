@@ -6,6 +6,7 @@ class sharedGpsData(object):
         self.pos   = (0.0,0.0,None,)   # float latitude(from equateur),float longitude(from greenwitch),datetime (Universal Time Coordinated)
         self.alt   = (0.0, "M", None,) # float altitude, string scale unit, datetime (Universal Time Coordinated)
         self.place = ("",sys.maxint,"M", "", None, )       # string place name, distance from this point, datetime (Universal Time Coordinated)
+        self.point_to_print = []
     
     ###
     def setPosition(self, latitude, longitude, dtime):
@@ -27,3 +28,12 @@ class sharedGpsData(object):
         
     def getPlace(self):
         return self.place
+        
+    ###
+    def addPointOfInterest(self, gpoint):
+        self.point_to_print.append(gpoint)
+        
+    def getAndResetPointOfInterest(self):
+        toRet = self.point_to_print
+        self.point_to_print = []
+        return toRet

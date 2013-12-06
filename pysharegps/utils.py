@@ -20,14 +20,16 @@
 
 #TODO add more functionnalitites from the website
     #not prioritary
+    #make a special line object, see the description in the middle of sharegps.py
+
 
 from math import *
 import sys
 
 R = 6371.000
 
-def getCoordString(lat, lon):
-    return str(lat)+", "+str(lon)
+def getCoordString(point):
+    return str(point.lat)+", "+str(point.lon)
 
 def parseCoordString(string):
     string = string.strip()
@@ -63,13 +65,13 @@ def parseCoordString(string):
     if lon < -180.0 or lon > 180.0:
         raise ValueError("Coordinate parse string : invalid longitude value, expected a value between -180.0 and 180.0, got "+str(lon))
         
-    return lat,lon
+    return gpsPoint(lat,lon)
 
-def getDistance(pointALat,pointALon, pointBLat, pointBLon):
-    dLat = radians( (pointBLat-pointALat) )
-    dLon = radians( (pointBLon-pointALon) )
-    lat1 = radians( pointALat )
-    lat2 = radians( pointBLat )
+def getDistance(pointA, pointB):
+    dLat = radians( (pointB.lat-pointA.lat) )
+    dLon = radians( (pointB.lon-pointA.lon) )
+    lat1 = radians( pointA.lat )
+    lat2 = radians( pointB.lat )
 
     a = sin(dLat/2.0) * sin(dLat/2.0) + sin(dLon/2.0) * sin(dLon/2.0) * cos(lat1) * cos(lat2); 
     c = 2.0 * atan2(sqrt(a), sqrt(1.0-a)); 
@@ -78,67 +80,106 @@ def getDistance(pointALat,pointALon, pointBLat, pointBLon):
     return abs(d)
 
 class gpsPoint(object):
-    def __init__(self,latitude,longitude):
-        self.latitude = latitude
-        self.longitude = longitude
-        
-class gpsLine(object):
-    def __init__(self,startPoint,endPoint,name=None):
-        self.startPoint = startPoint
-        self.endPoint = endPoint
+    def __init__(self,lat = 0.0,lon = 0.0, name = "", descr = None):
+        self.lat = lat
+        self.lon = lon
         self.name = name
-        
-        self.segmentLength = getDistance(startPoint.latitude,startPoint.longitude,endPoint.latitude,endPoint.longitude)
-        
-        
-def getBearing(pointALat,pointALon, pointBLat, pointBLon):
-    dLat = radians( (pointBLat-pointALat) )
-    dLon = radians( (pointBLon-pointALon) )
-    lat1 = radians( pointALat )
-    lat2 = radians( pointBLat )
+        self.descr = descr
+
+class gpsSimpleLine(object):
+    def __init__(self, start, end, descr = None)
+        self.start = start
+        self.end = end
+        self.descr = descr
+
+class gpsLine(List):
+    #TODO catch list update event
+        #to set the variable self.lengthComputed to False
+
+    def __init__(self):
+        self.lengthComputed = False
+        self.length = None
+
+    def isLengthComputed(self)
+        return self.lengthComputed
+
+    def getLength(self):
+        return self.length
+
+    def computeLength(self):
+        pass #TODO
+
+
+def getBearing(pointA, pointB)#(pointALat,pointALon, pointBLat, pointBLon):
+    dLat = radians( (pointB.lat-pointA.lat) )
+    dLon = radians( (pointB.lon-pointA.lon) )
+    lat1 = radians( pointA.lat )
+    lat2 = radians( pointB.lat )
 
     y = sin(dLon) * cos(lat2);
     x = cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(dLon);
 
     return degrees ( atan2(y, x) )
     
-def getLineDistance(pointXLat,pointXLon,linePointALat,linePointALon,linePointBLat,linePointBLon):
+def getLineDistance(point, linePointA, linePointB) #(pointXLat,pointXLon,linePointALat,linePointALon,linePointBLat,linePointBLon):
     
-    d13 = getDistance(linePointALat,linePointALon,pointXLat,pointXLon)
-    brng13 = radians( getBearing(linePointALat,linePointALon,pointXLat,pointXLon) )
-    brng12 = radians( getBearing(linePointALat,linePointALon,linePointBLat,linePointBLon) )
+    d13 = getDistance(linePointA,point)
+    brng13 = radians( getBearing(linePointA,point) )
+    brng12 = radians( getBearing(linePointA,linePointB) )
     
     return abs(asin(sin(d13/R)*sin(brng13-brng12)) * R);
 
-def sortDistance(x,y):
-    disX,ditType,nameX = x
-    disY,ditType,nameY = y
+
+#def sortDistance(x,y):
+#    disX,ditType,nameX = x
+#    disY,ditType,nameY = y
+#    
+#    return int(disX-disY)
+
+
+
+
+class nearestGpsPoint(gpsPoint):
+    def __init__(self, lat = 0.0,lon = 0.0, distance = 0.0, name = "", descr = None, fromPoint = None)
+        gpsPoint.__init__(lat, lon, descr)
+        self.distance = distance
+        self.fromPoint = fromPoint
+
+def findTheNearestPoint(pointX, pointList):
+    if len(pointList) == 0:
+        return None
+
+    nearest = (sys.maxint,None, None)
     
-    return int(disX-disY)
+    for k, point in pointList.iteritems():
+        distance = getDistance(pointX, point)
+
+        if distance < nearest[0]:
+            nearest = (distance,k, point)
+    
+    return nearestGpsPoint(nearest[2].lat, nearest[2].lon, nearest[0], k, nearest[2].descr, nearest[1], pointX)
 
 DISTANCEFROMLINE       = "from line"
 DISTANCEFROMSTARTPOINT = "from starting point"
 DISTANCEFROMENDPOINT   = "from end point"
-DISTANCEFROMPOINT      = "from point"
 
-def findTheNearestPoint(pointXLat,pointXLon, pointList):
-    nearest = (sys.maxint,DISTANCEFROMPOINT,"no point available", 0.0, 0.0)
-    
-    for k, point in pointList.iteritems():
-        distance = getDistance(pointXLat,pointXLon, point[0], point[1])
+class nearestGpsLine(gpsSimpleLine):
+    def __init__(self, start, end, distance = 0.0, distFrom = DISTANCEFROMLINE, descr = None, fromPoint = None)
+        gpsSimpleLine.__init__(start, end, descr)
+        self.distance = distance
+        self.distFrom = distFrom
+        self.fromPoint = fromPoint
 
-        if distance < nearest[0]:
-            nearest = (distance,DISTANCEFROMPOINT,k, point[0], point[1])
+def findThenearestLine(pointX, lineList):
+    if len(lineList) == 0:
+        return None
 
-    return nearest
-
-def findThenearestLine(pointXLat,pointXLon, lineList):
-    nearest = (sys.maxint,DISTANCEFROMLINE,"no line available", 0.0, 0.0, 0.0, 0.0)
+    nearest = (sys.maxint,DISTANCEFROMLINE,None, None)
     for k, line in lineList.iteritems():
-        distanceFromStartPoint = getDistance(pointXLat,pointXLon,line[0],line[1])
-        distanceFromEndPoint   = getDistance(pointXLat,pointXLon,line[2],line[3])
-        distanceFromTheLine    = getLineDistance(pointXLat,pointXLon,line[0],line[1],line[2],line[3] )
-        segmentLength          = getDistance(line[0],line[1],line[2],line[3])
+        distanceFromStartPoint = getDistance(pointX,line.start)
+        distanceFromEndPoint   = getDistance(pointX,line.end)
+        distanceFromTheLine    = getLineDistance(pointX,line.start,line.end )
+        segmentLength          = getDistance(line.start,line.end)
         
         #print "    distanceFromTheLine="+str(distanceFromTheLine)
             
@@ -159,9 +200,9 @@ def findThenearestLine(pointXLat,pointXLon, lineList):
             distanceType = DISTANCEFROMLINE
     
         if distance < nearest[0]:
-            nearest = (distance,distanceType,k, line[0],line[1],line[2],line[3])
+            nearest = (distance,distanceType,k,line)
     
-    return nearest
+    return nearestGpsLine(nearest[3].start, nearest[3].end, nearest[0], nearest[1],nearest[2],pointX)
 
 
 
