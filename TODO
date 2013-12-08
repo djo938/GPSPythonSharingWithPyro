@@ -9,13 +9,10 @@
             try/catch on the import
         running or not
 
--solve the security issues 
-    - ?? see when the client is started
-    - try to reproduce
+-test line and point of interest, they must be written in the kml file
+    -write plasky area in the files
 
--build the KML file
-    -try to put the dump coord inside
-
+-manage color point
 
 #### NOT PRIOR ###
 
