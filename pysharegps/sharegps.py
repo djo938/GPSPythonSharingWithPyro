@@ -19,6 +19,7 @@ KML_LINE_POINT_LIMIT              = 200
 MIDDAY                            = (12,30,)
 DATA_DIRECTORY                    = "/root/data/kml/"
 CONF_DIRECTORY                    = "/root/conf/gpscli/"
+PYRO_NAMING                       = "PYRONAME:dump.gpsdata2"
 
 ### google maps icons ###
 #http://mabp.kiev.ua/2010/01/12/google-map-markers/
@@ -134,7 +135,7 @@ class gpsSharing(Daemon):
         while True:
             try:
                 gpsd = gps(mode=WATCH_ENABLE) #starting the stream of info
-                proxy=Pyro4.Proxy("PYRONAME:dump.gpsdata")
+                proxy=Pyro4.Proxy(PYRO_NAMING)
                 timeSet = False
                 lastfix = None
                 lastpos = (0.0, 0.0, )
@@ -258,7 +259,7 @@ class sharedGpsClient(object):
         
     def reInit(self):
         try:
-            self.shared = Pyro4.Proxy("PYRONAME:dump.gpsdata")
+            self.shared = Pyro4.Proxy(PYRO_NAMING)
         except Exception as ex:
             self.shared = None
             logging.exception("Pyro4 Exception (getPosition) : "+str(ex))
