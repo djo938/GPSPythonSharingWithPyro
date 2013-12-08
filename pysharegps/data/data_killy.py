@@ -12,7 +12,7 @@ point_list = {"UCPA Val d'isere" : gpsPoint(45.447536,6.982068)}
 ### lines_list ###
 line_list = {
 "TCD6 de la Sache"              :gpsSimpleLine(gpsPoint(45.50645718,6.92097366),gpsPoint(45.49042172,6.9146812 )),
-"TCD8/10 des Boisses"           :gpsSimpleLine(gpsPoint(45.49813671,6.92353249),gpsPoint(45.4901309 ,6.91490114),
+"TCD8/10 des Boisses"           :gpsSimpleLine(gpsPoint(45.49813671,6.92353249),gpsPoint(45.4901309 ,6.91490114)),
 "TKD des Almes"                 :gpsSimpleLine(gpsPoint(45.4700907 ,6.90672576),gpsPoint(45.47310897,6.90124601)),
 "TKD Chardonnet"                :gpsSimpleLine(gpsPoint(45.46796139,6.90226793),gpsPoint(45.46961794,6.89162493)),	
 #"TKD Claret"                    :((,,,),#TODO entre tuff et bollin
@@ -49,7 +49,7 @@ line_list = {
 "TSD TICHOT"                    :gpsSimpleLine(gpsPoint(45.45405492,6.8969357 ),gpsPoint(45.45528165,6.8826288 )),
 "TSF COL DES VES"               :gpsSimpleLine(gpsPoint(45.45169168,6.88247323),gpsPoint(45.44246733,6.86382651)),
 "TSD GRATTALU"                  :gpsSimpleLine(gpsPoint(45.45193629,6.88165247),gpsPoint(45.46125315,6.87034428)),
-"TRANSCORDE"                    :((,,,),#TODO au pied de tichot
+#"TRANSCORDE"                    :((,,,),#TODO au pied de tichot
 
 "TPH OLYMPIQUE"                 :gpsSimpleLine(gpsPoint(45.44670397,6.97617888),gpsPoint(45.44295537,6.95164204)),
 "FUNIVAL"                       :gpsSimpleLine(gpsPoint(45.45926899,6.96436644),gpsPoint(45.44320002,6.95014536)),

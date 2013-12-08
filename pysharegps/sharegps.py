@@ -8,14 +8,14 @@ from gps.misc import *               #package comes from gpsd
 from utils import *
 from simplekml import Kml            #https://pypi.python.org/pypi/simplekml
 from data import line_list, point_list
+import dateutil.parser               #https://pypi.python.org/pypi/python-dateutil
 
 ### global vars ###
 MAX_SYSTIME_SECONDS_BEFORE_CHANGE = 4
 MAX_DELAY_BEFORE_REFRESH          = 5
 MAX_DISTANCE_TO_REFRESH           = 2
-KML_LINE_POINT_LIMIT              = 200
 DISTANCE_LIMIT_TO_BE_NEAR         = 25
-KML_LINE_POINT_LIMIT              = 200
+KML_LINE_POINT_LIMIT              = 10 #200 TODO set to default
 MIDDAY                            = (12,30,)
 DATA_DIRECTORY                    = "/root/data/kml/"
 CONF_DIRECTORY                    = "/root/conf/gpscli/"
@@ -45,14 +45,17 @@ def setSystemTime(dtime):
         return False
     return True
 
-def manageFixTime(gpsd, timeSet)
+def manageFixTime(gpsd, timeSet):
     utcdatetime = None
     
     #try to get the time of the fix
-    if gpsd.utc != None and not isnan(gpsd.utc) and len(gpsd.utc) > 0:
-        utcfloatTime = isotime(gpsd.utc)
-        utcdatetime = datetime.datetime.fromtimestamp(int(utcfloatTime))
-    
+    print gpsd.__class__, type(gpsd),type(gpsd.utc), gpsd.utc
+    if gpsd.utc != None and len(str(gpsd.utc)) > 0:# and not isnan(gpsd.utc):
+        #utcfloatTime = isotime(gpsd.utc)
+        #utcdatetime = datetime.datetime.fromtimestamp(int(utcfloatTime))
+        utcdatetime = dateutil.parser.parse(gpsd.utc)
+        utcdatetime = utcdatetime.replace(tzinfo=None)
+        
         #set system time
         #TODO don't set system time if ntpd fetch it
             #not prior
@@ -60,21 +63,28 @@ def manageFixTime(gpsd, timeSet)
             timeSet = setSystemTime(utcdatetime)
         else:
             currentSystemTime = datetime.datetime.now()
+            #currentSystemTime = currentSystemTime.replace(tzinfo=None)
             if (currentSystemTime - utcdatetime).total_seconds() > MAX_SYSTIME_SECONDS_BEFORE_CHANGE:
                 setSystemTime(utcdatetime)
     else:
         #if gps fix does not have datetime, use the system time
+            #occur at the bigining
         logging.warning("no time set in the gps fix, use the local time")
         utcdatetime = datetime.datetime.now() #if timeSet == False, the current time could be hazardous
+    
     
     logging.info("datetime : "+str(utcdatetime))
     logging.info("timeSet : "+str(timeSet))
     
     return timeSet, utcdatetime
 
-def manage_kml(utcdatetime, kml, kml_list, kml_interest_line_list, kml_interest_point_list):
+def manage_kml(utcdatetime, kml, kml_list_start_time, kml_list, kml_interest_line_list, kml_interest_point_list):
+    print "KML"
+    print "KML"
+    print "KML"
+
     if len(kml_list) > 0:
-        line = kml.newlinestring(name="From "+kml_list_start_time.isofromat()+" to "+utcdatetime.isoformat, description="", coords=kml_list)
+        line = kml.newlinestring(name="From "+kml_list_start_time.isoformat()+" to "+utcdatetime.isoformat(), description="", coords=kml_list)
     
         #if past midday, colour the line in red
         if utcdatetime.hour < MIDDAY[0] or (utcdatetime.hour == MIDDAY[0] and utcdatetime.minute < MIDDAY[1]):
@@ -102,7 +112,7 @@ def manage_kml(utcdatetime, kml, kml_list, kml_interest_line_list, kml_interest_
         point.style.iconstyle.icon.href = getColorPath(interest_point.name)
    
     #save the file (for every line written, overwrite the file)
-    date = datetime.datetime.now
+    date = datetime.datetime.now()
     kml.save(DATA_DIRECTORY+"skidump_"+str(date.day)+"_"+str(date.month)+"_"+str(date.year)+".kml")
 
 def loadColorConf():
@@ -139,7 +149,7 @@ class gpsSharing(Daemon):
                 timeSet = False
                 lastfix = None
                 lastpos = (0.0, 0.0, )
-                proxy.setGpsLogId(localid)
+                proxy.setGpsLogId(self.localid)
                 
                 #kml vars
                 kml_list_start_time               = None
@@ -152,9 +162,9 @@ class gpsSharing(Daemon):
                 
                 while True:
                     gpsd.next() #this will continue to loop and grab EACH set of gpsd info to clear the buffer
-                    
+                    print "KML", len(kml_list), kml_list_start_time
                     ### DATETIME ###
-                    timeSet, utcdatetime = manageFixTime(timeSet, gpsd)
+                    timeSet, utcdatetime = manageFixTime(gpsd, timeSet)
                     
                     ### ALTITUDE
                     if not isnan(gpsd.fix.altitude):
@@ -164,7 +174,7 @@ class gpsSharing(Daemon):
                     ### POSITION ###
                     
                     #if position is not set, nothing to do
-                    if isnan(gpsd.fix.latitude) or isnan(gpsd.fix.longitude):
+                    if isnan(gpsd.fix.latitude) or isnan(gpsd.fix.longitude) or (gpsd.fix.latitude == 0.0 and gpsd.fix.longitude == 0.0):
                         continue
                     
                     #if no fix time OR previous fix is bigger than 10 seconds (?) OR distant of 2 meters (?)
@@ -174,6 +184,7 @@ class gpsSharing(Daemon):
                     logging.info("position : "+str(gpsd.fix.latitude)+","+str(gpsd.fix.longitude))
                     
                     #if no need to refresh position
+                    print "<",utcdatetime,"><",lastfix,">"
                     if lastfix != None and (utcdatetime - lastfix).total_seconds() <= MAX_DELAY_BEFORE_REFRESH and getDistance(gpoint, lastpos) <= MAX_DISTANCE_TO_REFRESH:
                         continue
 
@@ -189,8 +200,8 @@ class gpsSharing(Daemon):
                         #generic method to compute distance
                             #from each line between two consecutive point
                             #from each point 
-                    nearest_line  = findThenearestLine(gpoint)
-                    nearest_point = findTheNearestPoint(gpoint)
+                    nearest_line  = findThenearestLine(gpoint, line_list)
+                    nearest_point = findTheNearestPoint(gpoint, point_list)
                     
                     #keep only the best
                     if nearest_line != None and nearest_point != None:
@@ -227,12 +238,12 @@ class gpsSharing(Daemon):
                             
                         kml_list.append( (gpoint.lat, gpoint.lon,) )
                     
-                    if len(kml_list) > KML_LINE_POINT_LIMIT:
+                    if len(kml_list) >= KML_LINE_POINT_LIMIT:
                         #get point of interest from proxy
-                        kml_interest_point_list.append(proxy.getAndResetPointOfInterest())
+                        kml_interest_point_list.extend(proxy.getAndResetPointOfInterest())
                         
                         #kml process
-                        manage_kml(utcdatetime, kml, kml_list, kml_interest_line_list, kml_interest_point_list)
+                        manage_kml(utcdatetime, kml, kml_list_start_time, kml_list, kml_interest_line_list, kml_interest_point_list)
                         
                         #reset list
                         kml_list                = []
@@ -247,6 +258,8 @@ class gpsSharing(Daemon):
                     lastfix = utcdatetime
             except Exception as ex:
                 logging.exception("manage data Exception : "+str(ex))
+                if self.debug:
+                    exit()
                 time.sleep(2)
                 continue
 
@@ -255,7 +268,7 @@ class sharedGpsClient(object):
         self.reInit()
     
     def isInit(self):
-        return self.shared == None
+        return self.shared != None
         
     def reInit(self):
         try:

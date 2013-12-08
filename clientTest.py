@@ -15,6 +15,9 @@ if __name__ == "__main__":
         print "altitude: "+str(altitude[0])+str(altitude[1])+" ("+str(position[2])+")"
         
         place = client.getSharedObject().getPlace()
-        print "nearest place: "+place[0]+" at "+str(place[1])+str(place[2])+" ("+str(position[3])+")"
+        if place[4] == None:
+            print "no defined place near this position"
+        else:
+            print "nearest place: "+place[0]+" at "+str(place[1])+str(place[2])+","+str(place[3])+" ("+str(place[4])+")"
     else:
         print "fail to init shared object"

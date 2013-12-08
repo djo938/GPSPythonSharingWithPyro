@@ -7,7 +7,16 @@ class sharedGpsData(object):
         self.alt   = (0.0, "M", None,) # float altitude, string scale unit, datetime (Universal Time Coordinated)
         self.place = ("",sys.maxint,"M", "", None, )       # string place name, distance from this point, datetime (Universal Time Coordinated)
         self.point_to_print = []
+        self.gpsShareDaemonId = -1
     
+    ###
+
+    def setGpsLogId(self, process_id):
+        self.gpsShareDaemonId = process_id
+
+    def getGpsLogId(self):
+        return self.gpsShareDaemonId
+
     ###
     def setPosition(self, latitude, longitude, dtime):
         self.pos = (latitude, longitude, dtime,)

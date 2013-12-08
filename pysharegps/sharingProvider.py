@@ -13,7 +13,7 @@ class dataSharing(Daemon):
                 daemon=Pyro4.Daemon() # make a Pyro daemon
                 ns=Pyro4.locateNS() # find the name server
                 uri=daemon.register(gpsdata) # register the greeting object as a Pyro object
-                ns.register("dump.gpsdata", uri) # register the object with a name in the name server
+                ns.register("dump.gpsdata2", uri) # register the object with a name in the name server
 
                 #start the event loop
                 logging.info("Ready. start event loop")
