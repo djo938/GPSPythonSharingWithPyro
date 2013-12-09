@@ -1,4 +1,6 @@
-#http:(//www.mapcoordinates.net
+#http://www.mapcoordinates.net
+#http://itouchmap.com/latlong.html
+
 from pysharegps.utils import gpsPoint, gpsSimpleLine
 
 ### user list ###
