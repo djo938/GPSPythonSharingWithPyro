@@ -8,7 +8,7 @@ from gps.misc import *               #package comes from gpsd
 from utils import *
 from data import line_list, point_list
 import dateutil.parser               #https://pypi.python.org/pypi/python-dateutil
-from kmlManagement import ColorMarkerConfigManager
+from kmlManagement import ColorMarkerConfigManager, kmlManager
 
 ### global vars ###
 MAX_SYSTIME_SECONDS_BEFORE_CHANGE = 4
@@ -147,7 +147,10 @@ class gpsSharing(Daemon):
                         proxy.setPlace("", sys.maxint, "", None)
                         
                     ### KML ###
-                    kmlm.addEventPointList(proxy.getAndResetPointOfInterest())
+                    ipoint = proxy.getAndResetPointOfInterest()
+                    for lat, lon, key, descr in ipoint:
+                        kmlm.addEventPointList(gpoint(lat, lon, key, descr))
+                    
                     kmlm.addLinePoint(gpoint,utcdatetime, colorMarker)
                     
                     ### SQL LITE ###
@@ -175,7 +178,7 @@ class sharedGpsClient(object):
             self.shared = Pyro4.Proxy(PYRO_NAMING)
         except Exception as ex:
             self.shared = None
-            logging.exception("Pyro4 Exception (getPosition) : "+str(ex))
+            logging.exception("Pyro4 Exception (init shared client) : "+str(ex))
     
     def getSharedObject(self):
         return self.shared

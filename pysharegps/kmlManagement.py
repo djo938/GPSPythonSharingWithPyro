@@ -94,7 +94,7 @@ class kmlManager(object):
 
     def addEventPointList(self,l):
         #get point of interest from proxy
-        kml_interest_point_list.extend(proxy.getAndResetPointOfInterest())
+        self.kml_interest_point_list.extend(l)
 
 class ColorMarkerConfigManager(object):
     def __init__(self, path = None):

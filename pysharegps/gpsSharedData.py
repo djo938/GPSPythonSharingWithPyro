@@ -1,6 +1,5 @@
 
 import sys
-from utils import gpsPoint
 
 class sharedGpsData(object):
     def __init__(self):
@@ -41,7 +40,7 @@ class sharedGpsData(object):
         
     ###
     def addPointOfInterest(self, lat, lon, key, descr=None):
-        self.point_to_print.append(gpsPoint(lat, lon, key, descr))
+        self.point_to_print.append( (lat, lon, key, descr,) )
         
     def getAndResetPointOfInterest(self):
         toRet = self.point_to_print
